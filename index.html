@@ -3,262 +3,150 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>德州撲克賽事管理系統 - 終極版</title>
+    <title>撲克控盤系統 - 穩定版</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
-        :root { --bg: #121212; --panel: #1e1e1e; --accent: #b21f1f; --text: #e0e0e0; --timer-color: #2ecc71; }
         * { box-sizing: border-box; }
-        body { font-family: "Microsoft JhengHei", sans-serif; background: var(--bg); color: var(--text); margin: 0; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
-
-        /* --- 初始選擇/配對畫面 --- */
-        .setup-box { background: var(--panel); padding: 30px; border-radius: 20px; text-align: center; width: 90%; max-width: 400px; margin-top: 50px; }
-        .btn-main { background: var(--accent); color: white; border: none; padding: 15px; border-radius: 10px; font-size: 18px; font-weight: bold; width: 100%; margin: 10px 0; cursor: pointer; }
-        .btn-sub { background: #555; }
-        .pair-code { font-size: 50px; color: var(--accent); font-weight: 900; letter-spacing: 5px; margin: 20px 0; }
-
-        /* --- 電腦顯示端 (OBS) --- */
-        #displayView { width: 800px; display: none; background: #000; padding: 20px; }
-        .display-layout { display: flex; gap: 20px; }
-        .timer-section { flex: 1.5; background: var(--panel); padding: 20px; border-radius: 15px; text-align: center; border: 2px solid #333; }
-        .chip-section { flex: 1; background: #000; }
+        body { font-family: sans-serif; background: #121212; color: #fff; margin: 0; padding: 10px; display: flex; flex-direction: column; align-items: center; }
         
-        .timer-big { font-size: 100px; font-weight: bold; color: var(--timer-color); font-family: monospace; }
-        .blind-big { font-size: 48px; font-weight: bold; margin: 10px 0; }
-        .next-lvl { color: #888; font-size: 18px; }
+        /* 配對介面 */
+        .box { background: #222; padding: 20px; border-radius: 15px; width: 100%; max-width: 350px; text-align: center; margin-top: 20px; }
+        .btn { background: #b21f1f; color: #fff; border: none; padding: 15px; border-radius: 10px; width: 100%; font-weight: bold; font-size: 18px; margin: 10px 0; }
+        .input-code { width: 100%; padding: 15px; font-size: 24px; text-align: center; background: #000; color: #fff; border: 1px solid #444; margin-bottom: 10px; }
 
-        .chip-row { display: flex; border-bottom: 2px solid var(--accent); padding: 12px; background: #000; }
-        .name-txt { flex: 2; font-size: 20px; font-weight: bold; }
-        .bb-txt { flex: 1; text-align: right; font-size: 22px; border-right: 1px solid #333; padding-right: 10px; }
-        .total-txt { flex: 1; text-align: right; font-size: 18px; padding-left: 10px; color: #aaa; }
+        /* 電腦 OBS 畫面 */
+        #displayView { width: 100%; max-width: 600px; display: none; background: #000; }
+        .header { background: #b21f1f; padding: 15px; text-align: center; font-weight: bold; font-size: 20px; }
+        .row { display: flex; align-items: center; border-bottom: 2px solid #b21f1f; padding: 15px; background: #000; }
+        .n-txt { flex: 2; font-size: 22px; }
+        .b-txt { flex: 1; text-align: right; font-size: 24px; border-right: 1px solid #333; padding-right: 10px; }
+        .c-txt { flex: 1; text-align: right; font-size: 20px; padding-left: 10px; color: #888; }
 
-        /* --- 手機控制端 (解決混亂) --- */
-        #controlView { width: 100%; max-width: 500px; display: none; flex-direction: column; padding: 15px; }
-        .ctrl-card { background: var(--panel); padding: 15px; border-radius: 12px; margin-bottom: 15px; }
-        .timer-ctrl-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        
-        .player-card { background: #333; padding: 15px; border-radius: 12px; margin-bottom: 12px; border-left: 6px solid var(--accent); position: relative; }
-        .card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
-        .card-input { width: 100%; padding: 10px; background: #000; border: 1px solid #444; color: #fff; border-radius: 6px; }
-        .bb-btn-group { display: flex; gap: 10px; }
-        .bb-btn { flex: 1; padding: 12px; background: #555; border: none; color: #fff; border-radius: 8px; font-weight: bold; }
-        .delete-btn { position: absolute; top: 5px; right: 5px; background: none; color: #777; border: none; font-size: 18px; }
-
-        .tab-btn { padding: 10px; background: #333; color: #fff; border: none; flex: 1; font-weight: bold; }
-        .tab-active { background: var(--accent); }
+        /* 手機控制介面 - 垂直佈局確保不亂 */
+        #controlView { width: 100%; max-width: 450px; display: none; flex-direction: column; }
+        .c-card { background: #2a2a2a; border-radius: 12px; padding: 15px; margin-bottom: 15px; border-left: 5px solid #b21f1f; }
+        .label { font-size: 14px; color: #aaa; margin-bottom: 5px; display: block; }
+        .in-field { width: 100%; padding: 12px; background: #111; border: 1px solid #444; color: #fff; border-radius: 8px; font-size: 16px; margin-bottom: 10px; }
+        .btn-group { display: flex; gap: 10px; }
+        .bb-btn { flex: 1; padding: 12px; background: #444; border: none; color: #fff; border-radius: 8px; font-weight: bold; font-size: 16px; }
     </style>
 </head>
 <body>
 
-<div id="setupBox" class="setup-box">
-    <h2>德州撲克賽事系統</h2>
-    <button class="btn-main" onclick="startAsDisplay()">我是電腦 (顯示畫面)</button>
-    <button class="btn-main btn-sub" onclick="startAsController()">我是手機 (導播控盤)</button>
-    <div id="pairShow" style="display:none; margin-top:20px;">
-        <p>手機輸入配對碼：</p>
-        <div class="pair-code" id="myCode">---</div>
+<div id="setup" class="box">
+    <h3>撲克連線系統</h3>
+    <button class="btn" onclick="startD()">我是電腦 (顯示器)</button>
+    <button class="btn" style="background:#444" onclick="startC()">我是手機 (遙控器)</button>
+    <div id="showCode" style="display:none; margin-top:20px;">
+        <p>配對碼：</p>
+        <h1 id="myCode" style="color:#f00; font-size:50px; margin:10px 0;">---</h1>
     </div>
-    <div id="pairInput" style="display:none; margin-top:20px;">
-        <input type="tel" id="targetCode" placeholder="6位代碼" class="btn-main" style="background:#000; text-align:center;">
-        <button class="btn-main" onclick="doConnect()">連線到電腦</button>
+    <div id="inCode" style="display:none; margin-top:20px;">
+        <input type="tel" id="target" class="input-code" placeholder="6位數">
+        <button class="btn" onclick="connect()">開始連線</button>
     </div>
 </div>
 
 <div id="displayView">
-    <div class="display-layout">
-        <div class="timer-section">
-            <div id="dLevel" style="font-size: 20px; color: #aaa;">LEVEL 1</div>
-            <div id="dBlinds" class="blind-big">50 / 100</div>
-            <div id="dTimer" class="timer-big">20:00</div>
-            <div id="dNext" class="next-lvl">下一級: 100 / 200</div>
-        </div>
-        <div id="dChipList" class="chip-section"></div>
-    </div>
+    <div class="header" id="dT">APT CHAMPIONSHIP</div>
+    <div id="dL"></div>
 </div>
 
 <div id="controlView">
-    <div class="ctrl-card">
-        <div style="text-align:center; font-size:24px; font-weight:bold; margin-bottom:10px;" id="cTimerDisplay">20:00</div>
-        <div class="timer-ctrl-grid">
-            <button class="btn-main" onclick="cmd('toggleTimer')" id="btnPlay" style="margin:0">開始/暫停</button>
-            <button class="btn-main btn-sub" onclick="cmd('nextLevel')" style="margin:0">跳下一級</button>
-        </div>
+    <div class="c-card">
+        <span class="label">直播標題 :</span>
+        <input type="text" id="cT" value="APT CHAMPIONSHIP" oninput="send()" class="in-field">
+        <span class="label">當前大盲 (BB) :</span>
+        <input type="number" id="cB" value="120000" oninput="send()" class="in-field">
     </div>
-
-    <div style="display:flex; margin-bottom:15px; border-radius:10px; overflow:hidden;">
-        <button class="tab-btn tab-active">籌碼管理</button>
-        <button class="tab-btn" onclick="alert('賽事結構設定即將推出')">盲注結構</button>
-    </div>
-
-    <div id="cPlayerList"></div>
-    <button class="btn-main btn-sub" onclick="addP()">+ 新增玩家位置</button>
-    
-    <div style="margin-top:20px;">
-        <label>直播標題 :</label>
-        <input type="text" id="cTitle" value="APT CHAMPIONSHIP" oninput="sendData()" class="card-input" style="margin-top:5px;">
-    </div>
+    <div id="cL"></div>
+    <button class="btn" style="background:#333" onclick="addP()">+ 新增玩家位置</button>
 </div>
 
-<audio id="alarmSound" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg"></audio>
-
 <script>
-    // --- 初始賽事設定 ---
-    let timerState = { timeLeft: 1200, isRunning: false, currentIdx: 0 };
-    let schedule = [
-        { sb: 50, bb: 100, min: 20 },
-        { sb: 100, bb: 200, min: 20 },
-        { sb: 200, bb: 400, min: 20 },
-        { sb: 300, bb: 600, min: 20 }
-    ];
-    let players = [{ name: "PLAYER 1", chips: 10000000 }];
-    
+    let ps = [{ name: "PLAYER 1", chips: 12000000 }];
     let peer = null, conn = null;
-    const ID_PREFIX = "PKR-ULT-";
+    const PFX = "PKR-";
 
-    // --- 連線邏輯 ---
-    function startAsDisplay() {
-        document.getElementById('setupBox').style.display = 'none';
-        document.getElementById('pairShow').style.display = 'block';
+    function startD() {
+        document.getElementById('showCode').style.display = 'block';
         const code = Math.floor(100000 + Math.random() * 900000).toString();
         document.getElementById('myCode').innerText = code;
-        peer = new Peer(ID_PREFIX + code);
+        peer = new Peer(PFX + code);
         peer.on('connection', c => {
             conn = c;
-            initDisplay();
-            conn.on('data', d => handleData(d));
+            document.getElementById('setup').style.display='none';
+            document.getElementById('displayView').style.display='block';
+            conn.on('data', d => { ps=d.ps; document.getElementById('dT').innerText=d.t; upUI(d.b); });
         });
-        startClock();
     }
 
-    function startAsController() {
-        document.getElementById('setupBox').style.display = 'none';
-        document.getElementById('pairInput').style.display = 'block';
-    }
+    function startC() { document.getElementById('inCode').style.display='block'; }
 
-    function doConnect() {
-        const code = document.getElementById('targetCode').value;
+    function connect() {
+        const code = document.getElementById('target').value;
         peer = new Peer();
         peer.on('open', () => {
-            conn = peer.connect(ID_PREFIX + code);
+            conn = peer.connect(PFX + code);
             conn.on('open', () => {
-                document.getElementById('setupBox').style.display = 'none';
-                document.getElementById('controlView').style.display = 'flex';
-                renderCtrl();
-                sendData();
+                document.getElementById('setup').style.display='none';
+                document.getElementById('controlView').style.display='flex';
+                reCtrl(); send();
             });
         });
     }
 
-    // --- 核心同步邏輯 ---
-    function handleData(d) {
-        if(d.type === 'cmd') {
-            if(d.val === 'toggleTimer') timerState.isRunning = !timerState.isRunning;
-            if(d.val === 'nextLevel') skipLevel();
-        } else {
-            players = d.ps;
-            document.title = d.t;
-            // 同步計時器狀態 (可選)
-        }
-        updateDisplayUI();
-    }
-
-    function sendData() {
-        if(!conn || !conn.open) return;
-        players.forEach((p, i) => {
-            const n = document.getElementById(`n-${i}`);
-            const c = document.getElementById(`c-${i}`);
-            if(n) p.name = n.value.toUpperCase();
-            if(c) p.chips = parseInt(c.value) || 0;
+    function send() {
+        if(!conn) return;
+        const b = parseInt(document.getElementById('cB').value) || 1;
+        const t = document.getElementById('cT').value;
+        ps.forEach((p, i) => {
+            p.name = document.getElementById(`n-${i}`).value;
+            p.chips = parseInt(document.getElementById(`c-${i}`).value) || 0;
         });
-        const t = document.getElementById('cTitle').value;
-        conn.send({ ps: players, t: t });
-        updateDisplayUI();
+        conn.send({ ps, t, b });
+        upUI(b);
     }
 
-    function cmd(val) {
-        if(conn) conn.send({ type: 'cmd', val: val });
+    function upUI(b) {
+        const l = document.getElementById('dL');
+        if(!l) return;
+        l.innerHTML = '';
+        ps.forEach(p => {
+            const bbc = Math.floor(p.chips / b);
+            const cs = (p.chips >= 1000000) ? (p.chips/1000000).toFixed(1)+"M" : (p.chips/1000).toFixed(0)+"K";
+            l.innerHTML += `<div class="row"><div class="n-txt">${p.name}</div><div class="b-txt">${bbc} BB</div><div class="c-txt">${cs}</div></div>`;
+        });
     }
 
-    // --- 計時器邏輯 ---
-    function startClock() {
-        setInterval(() => {
-            if(timerState.isRunning && timerState.timeLeft > 0) {
-                timerState.timeLeft--;
-                updateDisplayUI();
-            } else if (timerState.isRunning && timerState.timeLeft <= 0) {
-                skipLevel();
-            }
-        }, 1000);
-    }
-
-    function skipLevel() {
-        document.getElementById('alarmSound').play();
-        timerState.currentIdx++;
-        if(timerState.currentIdx >= schedule.length) timerState.currentIdx = 0;
-        timerState.timeLeft = schedule[timerState.currentIdx].min * 60;
-        updateDisplayUI();
-    }
-
-    // --- UI 更新 ---
-    function updateDisplayUI() {
-        const step = schedule[timerState.currentIdx];
-        const m = Math.floor(timerState.timeLeft / 60);
-        const s = timerState.timeLeft % 60;
-        const timeStr = `${m}:${s < 10 ? '0' : ''}${s}`;
-
-        // 更新電腦端
-        if(document.getElementById('displayView').style.display !== 'none') {
-            document.getElementById('dTimer').innerText = timeStr;
-            document.getElementById('dBlinds').innerText = `${step.sb} / ${step.bb}`;
-            document.getElementById('dLevel').innerText = `LEVEL ${timerState.currentIdx + 1}`;
-            
-            const list = document.getElementById('dChipList');
-            list.innerHTML = '';
-            players.forEach(p => {
-                const bbc = Math.floor(p.chips / step.bb);
-                const cStr = (p.chips >= 1000000) ? (p.chips/1000000).toFixed(1)+"M" : (p.chips/1000).toFixed(0)+"K";
-                list.innerHTML += `<div class="chip-row"><div class="name-txt">${p.name}</div><div class="bb-txt">${bbc} BB</div><div class="total-txt">${cStr}</div></div>`;
-            });
-        }
-        // 更新手機端
-        if(document.getElementById('cTimerDisplay')) {
-            document.getElementById('cTimerDisplay').innerText = timeStr;
-        }
-    }
-
-    function renderCtrl() {
-        const list = document.getElementById('cPlayerList');
-        list.innerHTML = '';
-        players.forEach((p, i) => {
+    function reCtrl() {
+        const l = document.getElementById('cL');
+        l.innerHTML = '';
+        ps.forEach((p, i) => {
             const div = document.createElement('div');
-            div.className = 'player-card';
+            div.className = 'c-card';
             div.innerHTML = `
-                <button class="delete-btn" onclick="removeP(${i})">✕</button>
-                <div class="card-grid">
-                    <div><small>Player Name</small><input type="text" id="n-${i}" value="${p.name}" oninput="sendData()" class="card-input"></div>
-                    <div><small>Chips</small><input type="number" id="c-${i}" value="${p.chips}" oninput="sendData()" class="card-input"></div>
-                </div>
-                <div class="bb-btn-group">
-                    <button class="bb-btn" onclick="quickBB(${i},1)">+1BB</button>
-                    <button class="bb-btn" onclick="quickBB(${i},-1)">-1BB</button>
+                <span class="label">Player Name / Chips</span>
+                <input type="text" id="n-${i}" value="${p.name}" oninput="send()" class="in-field" style="color:#ff0">
+                <input type="number" id="c-${i}" value="${p.chips}" oninput="send()" class="in-field">
+                <div class="btn-group">
+                    <button class="bb-btn" onclick="qB(${i},1)">+1BB</button>
+                    <button class="bb-btn" onclick="qB(${i},-1)">-1BB</button>
+                    <button class="bb-btn" style="background:#111; flex:0.3" onclick="del(${i})">✕</button>
                 </div>`;
-            list.appendChild(div);
+            l.appendChild(div);
         });
     }
 
-    function quickBB(i, amt) {
-        const bb = schedule[timerState.currentIdx].bb;
+    function qB(i, a) {
+        const b = parseInt(document.getElementById('cB').value) || 1;
         const el = document.getElementById(`c-${i}`);
-        el.value = parseInt(el.value) + (amt * bb);
-        sendData();
+        el.value = parseInt(el.value) + (a * b);
+        send();
     }
 
-    function initDisplay() {
-        document.getElementById('displayView').style.display = 'block';
-        updateDisplayUI();
-    }
-
-    function addP() { players.push({name: "PLAYER " + (players.length + 1), chips: 0}); renderCtrl(); sendData(); }
-    function removeP(i) { players.splice(i, 1); renderCtrl(); sendData(); }
+    function addP() { ps.push({name: "PLAYER "+(ps.length+1), chips: 0}); reCtrl(); send(); }
+    function del(i) { ps.splice(i,1); reCtrl(); send(); }
 </script>
 </body>
 </html>
