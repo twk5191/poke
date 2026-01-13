@@ -11,14 +11,14 @@
         
         /* 配對介面 */
         .box { background: #222; padding: 20px; border-radius: 15px; width: 100%; max-width: 350px; text-align: center; margin-top: 20px; }
-        .btn { background: #b21f1f; color: #fff; border: none; padding: 15px; border-radius: 10px; width: 100%; font-weight: bold; font-size: 18px; margin: 10px 0; }
-        .input-code { width: 100%; padding: 15px; font-size: 24px; text-align: center; background: #000; color: #fff; border: 1px solid #444; margin-bottom: 10px; }
+        .btn { background: #b21f1f; color: #fff; border: none; padding: 15px; border-radius: 10px; width: 100%; font-weight: bold; font-size: 18px; margin: 10px 0; cursor: pointer; }
+        .input-code { width: 100%; padding: 15px; font-size: 24px; text-align: center; background: #000; color: #fff; border: 1px solid #444; margin-bottom: 10px; border-radius: 8px; }
 
         /* 電腦 OBS 畫面 */
         #displayView { width: 100%; max-width: 600px; display: none; background: #000; }
         .header { background: #b21f1f; padding: 15px; text-align: center; font-weight: bold; font-size: 20px; }
         .row { display: flex; align-items: center; border-bottom: 2px solid #b21f1f; padding: 15px; background: #000; }
-        .n-txt { flex: 2; font-size: 22px; }
+        .n-txt { flex: 2; font-size: 22px; font-weight: bold; }
         .b-txt { flex: 1; text-align: right; font-size: 24px; border-right: 1px solid #333; padding-right: 10px; }
         .c-txt { flex: 1; text-align: right; font-size: 20px; padding-left: 10px; color: #888; }
 
@@ -39,10 +39,10 @@
     <button class="btn" style="background:#444" onclick="startC()">我是手機 (遙控器)</button>
     <div id="showCode" style="display:none; margin-top:20px;">
         <p>配對碼：</p>
-        <h1 id="myCode" style="color:#f00; font-size:50px; margin:10px 0;">---</h1>
+        <h1 id="myCode" style="color:#f00; font-size:50px; margin:10px 0; letter-spacing:5px;">---</h1>
     </div>
     <div id="inCode" style="display:none; margin-top:20px;">
-        <input type="tel" id="target" class="input-code" placeholder="6位數">
+        <input type="tel" id="target" class="input-code" placeholder="6位數代碼">
         <button class="btn" onclick="connect()">開始連線</button>
     </div>
 </div>
@@ -126,8 +126,9 @@
             const div = document.createElement('div');
             div.className = 'c-card';
             div.innerHTML = `
-                <span class="label">Player Name / Chips</span>
+                <span class="label">Player Name</span>
                 <input type="text" id="n-${i}" value="${p.name}" oninput="send()" class="in-field" style="color:#ff0">
+                <span class="label">Chips</span>
                 <input type="number" id="c-${i}" value="${p.chips}" oninput="send()" class="in-field">
                 <div class="btn-group">
                     <button class="bb-btn" onclick="qB(${i},1)">+1BB</button>
@@ -146,7 +147,7 @@
     }
 
     function addP() { ps.push({name: "PLAYER "+(ps.length+1), chips: 0}); reCtrl(); send(); }
-    function del(i) { ps.splice(i,1); reCtrl(); send(); }
+    function del(i) { if(confirm("確定刪除？")) { ps.splice(i,1); reCtrl(); send(); } }
 </script>
 </body>
 </html>
