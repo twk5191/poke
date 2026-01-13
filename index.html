@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>德州撲克直播連線系統</title>
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <style>
+        body { font-family: "Microsoft JhengHei", sans-serif; background: #1a1a1a; color: white; margin: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; }
+        .box { background: #2d2d2d; padding: 30px; border-radius: 20px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5); width: 85%; max-width: 320px; }
+        .btn { background: #b21f1f; color: white; border: none; padding: 15px 20px; border-radius: 10px; font-size: 18px; font-weight: bold; cursor: pointer; margin: 10px 0; width: 100%; }
+        .btn-gray { background: #555; }
+        input { background: #000; color: #fff; border: 1px solid #555; padding: 12px; width: 85%; margin: 10px 0; font-size: 20px; text-align: center; border-radius: 5px; }
+        
+        /* 電腦顯示樣式 (OBS) */
+        #displayView { width: 500px; background: #000; display: none; padding-bottom: 10px; }
+        .header { background: #b21f1f; color: white; text-align: center; padding: 15px; font-weight: bold; font-size: 18px; letter-spacing: 1px; }
+        .chip-row { display: flex; align-items: center; border-bottom: 2px solid #b21f1f; padding: 15px; background: #000; }
+        .name-txt { flex: 2.5; font-size: 22px; font-weight: 900; }
+        .bb-txt { flex: 1.2; text-align: right; font-size: 24px; border-right: 1px solid #333; padding-right: 15px; color: #fff; }
+        .total-txt { flex: 1.2; text-align: right; font-size: 20px; padding-left: 15px; color: #aaa; }
+
+        /* 手機控制樣式 */
+        #controlView { width: 95%; max-width: 400px; display: none; padding: 10px; justify-content: flex-start; }
+        .p-card { background: #333; padding: 15px; border-radius: 10px; margin-bottom: 10px; border-left: 5px solid #b21f1f; }
+        .bb-btn { background: #555; color: white; border: none; padding: 10px 15px; border-radius: 5px; margin-top: 10px; margin-right: 5px; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div id="setupBox" class="box">
+    <h2 style="margin-bottom:20px;">撲克直播連線系統</h2>
+    <button class="btn" onclick="startAsDisplay()">我是電腦 (顯示畫面)</button>
+    <button class="btn btn-gray" onclick="startAsController()">我是手機 (控盤遙控)</button>
+    
+    <div id="pairShow" style="display:none; margin-top:20px; border-top:1px solid #444;">
+        <p>請在手機輸入配對碼：</p>
+        <h1 id="myCode" style="font-size:48px; color:#ff4d4d; margin:10px 0; letter-spacing:5px;">---</h1>
+    </div>
+
+    <div id="pairInput" style="display:none; margin-top:20px; border-top:1px solid #444;">
+        <p>請輸入電腦上的配對碼：</p>
+        <input type="number" id="targetCode" placeholder="000000">
+        <button class="btn" onclick="doConnect()">開始連線</button>
+    </div>
+</div>
+
+<div id="displayView">
+    <div id="dTitle" class="header">APT CHAMPIONSHIP</div>
+    <div id="dList"></div>
+</div>
+
+<div id="controlView">
+    <div class="p-card">
+        <label>直播標題：</label><input type="text" id="cTitle" value="APT CHAMPIONSHIP" oninput="sendData()" style="font-size:16px; width:90%; text-align:left;">
+        <label>大盲 BB：</label><input type="number" id="cBB" value="120000" oninput="sendData()" style="font-size:16px; width:90%; text-align:left;">
+    </div>
+    <div id="cList"></div>
+    <button class="btn btn-gray" onclick="addP()">+ 新增玩家位置</button>
+</div>
+
+<script>
+    let players = [{ name: "PLAYER 1", chips: 12000000 }];
+    let peer = null, conn = null;
+    const ID_PREFIX = "POKER-LIVE-";
+
+    function startAsDisplay() {
+        document.getElementById('pairShow').style.display = 'block';
+        const code = Math.floor(100000 + Math.random() * 900000).toString();
+        document.getElementById('myCode').innerText = code;
+        peer = new Peer(ID_PREFIX + code);
+        peer.on('connection', (c) => {
+            conn = c;
+            document.body.style.justifyContent = "flex-start";
+            document.getElementById('setupBox').style.display = 'none';
+            document.getElementById('displayView').style.display = 'block';
+            conn.on('data', d => {
+                players = d.ps;
+                document.getElementById('dTitle').innerText = d.t;
+                updateUI(d.bb);
+            });
+        });
+    }
+
+    function startAsController() {
+        document.getElementById('pairInput').style.display = 'block';
+    }
+
+    function doConnect() {
+        const code = document.getElementById('targetCode').value;
+        peer = new Peer();
+        peer.on('open', () => {
+            conn = peer.connect(ID_PREFIX + code);
+            conn.on('open', () => {
+                document.body.style.justifyContent = "flex-start";
+                document.getElementById('setupBox').style.display = 'none';
+                document.getElementById('controlView').style.display = 'flex';
+                renderCtrl();
+                sendData();
+            });
+        });
+    }
+
+    function sendData() {
+        if(!conn) return;
+        const bb = parseInt(document.getElementById('cBB').value) || 1;
+        const t = document.getElementById('cTitle').value;
+        players.forEach((p, i) => {
+            p.name = document.getElementById(`n-${i}`).value;
+            p.chips = parseInt(document.getElementById(`c-${i}`).value) || 0;
+        });
+        conn.send({ ps: players, t: t, bb: bb });
+        updateUI(bb);
+    }
+
+    function updateUI(bb) {
+        const list = document.getElementById('dList');
+        if(!list) return;
+        list.innerHTML = '';
+        players.forEach(p => {
+            const bbc = Math.floor(p.chips / bb);
+            const cStr = (p.chips >= 1000000) ? (p.chips/1000000).toFixed(1)+"M" : (p.chips/1000).toFixed(0)+"K";
+            list.innerHTML += `<div class="chip-row"><div class="name-txt">${p.name}</div><div class="bb-txt">${bbc} BB</div><div class="total-txt">${cStr}</div></div>`;
+        });
+    }
+
+    function renderCtrl() {
+        const list = document.getElementById('cList');
+        list.innerHTML = '';
+        players.forEach((p, i) => {
+            const div = document.createElement('div');
+            div.className = 'p-card';
+            div.innerHTML = `
+                <input type="text" id="n-${i}" value="${p.name}" oninput="sendData()" style="color:#ff0; text-align:left; width:90%;">
+                <input type="number" id="c-${i}" value="${p.chips}" oninput="sendData()" style="text-align:left; width:90%;">
+                <button class="bb-btn" onclick="quickBB(${i},1)">+1BB</button>
+                <button class="bb-btn" onclick="quickBB(${i},-1)">-1BB</button>
+                <button class="bb-btn" onclick="removeP(${i})" style="background:#444; float:right;">✕</button>`;
+            list.appendChild(div);
+        });
+    }
+
+    function quickBB(i, amt) {
+        const bb = parseInt(document.getElementById('cBB').value) || 1;
+        const el = document.getElementById(`c-${i}`);
+        el.value = parseInt(el.value) + (amt * bb);
+        sendData();
+    }
+
+    function addP() {
+        players.push({name: "NEW PLAYER", chips: 0});
+        renderCtrl();
+        sendData();
+    }
+
+    function removeP(i) {
+        players.splice(i, 1);
+        renderCtrl();
+        sendData();
+    }
+</script>
+</body>
+</html>
